@@ -474,8 +474,8 @@ check("Pastor title is used on the founder line, Meet photo, and Meet caption, n
   !/Pastor Tayo and Pastor Kemi/.test(aboutMain) &&
   !/<figcaption>Pastor /.test(aboutMain));
 check("Book covers lift off the cream page",
-  /\.book-cover\s*\{[^}]*box-shadow:[^}]*rgba\(44,\s*40,\s*36,\s*\.1[2-9]/.test(css) &&
-  /\.book-cover\s*\{[^}]*box-shadow:[^}]*rgba\(44,\s*40,\s*36,\s*\.1[6-9]/.test(css));
+  /\.book-cover\s*\{[^}]*box-shadow:[^}]*rgba\(44,\s*40,\s*36,\s*\.1[6-9]/.test(css) &&
+  /\.book-cover\s*\{[^}]*box-shadow:[^}]*rgba\(44,\s*40,\s*36,\s*\.2[0-9]/.test(css));
 check("Her 7-day copy is on Books", /biblical foundation of gratitude/.test(booksDoc));
 check("Her 100-day copy is on Books", /dedicated space to pause, remember God's goodness/.test(booksDoc));
 check("Books page is expandable, not a closed catalog", /more to come|coming soon/i.test(booksDoc));

@@ -355,7 +355,7 @@ figcaption { font-size: .85rem; color: var(--ink-soft); margin-top: .65rem; }
 .book-cover {
   border: 1px solid var(--grey-deep); border-radius: var(--radius); overflow: hidden;
   background: var(--white);
-  box-shadow: 0 10px 24px rgba(44, 40, 36, .12), 0 22px 48px rgba(44, 40, 36, .18);
+  box-shadow: 0 12px 28px rgba(44, 40, 36, .18), 0 28px 60px rgba(44, 40, 36, .26);
 }
 .book-cover img { width: 100%; display: block; }
 .book-tease {
