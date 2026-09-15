@@ -284,6 +284,15 @@ check("Contact form targets the Zoe Life inbox", cfgObj.formEndpoint === FORM_EN
 check("Mailing list targets the Zoe Life inbox", cfgObj.newsletterEndpoint === FORM_ENDPOINT);
 check("Consult uses the approved Google Calendar link", cfgObj.bookingUrl === BOOKING_URL);
 check("config.payments is present", cfgObj.payments && typeof cfgObj.payments === "object");
+for (const book of ["devotional", "journal"]) {
+  check(`config.payments.${book} is present`, cfgObj.payments[book] && typeof cfgObj.payments[book] === "object");
+  for (const channel of ["amazon", "etsy", "gumroad", "stripe", "paypal"]) {
+    check(
+      `config.payments.${book}.${channel} is present`,
+      cfgObj.payments[book] && channel in cfgObj.payments[book]
+    );
+  }
+}
 check(
   "No placeholder endpoint was invented",
   flattenValues(cfgObj).every((v) => v === null || /^https:\/\//.test(String(v))),
@@ -303,7 +312,17 @@ check("No prices are stated", !/\$\s?\d|USD\s?\d|\d+\.\d{2}\s?(?:USD|dollars)/i.
 check("KingsWord is not listed as a client", !/kingsword/i.test(publishedHtml));
 
 const booksDoc = html["books.html"];
-check("No invented storefront URLs", !/amazon\.com|etsy\.com|gumroad\.com|selar\.co/i.test(booksDoc));
+const configuredBuyUrls = flattenValues(cfgObj.payments || {}).filter(Boolean);
+if (configuredBuyUrls.length === 0) {
+  check("No invented storefront URLs", !/amazon\.com|etsy\.com|gumroad\.com|selar\.co/i.test(booksDoc));
+  check("Purchase options stay coming-soon when no buy links are configured", /purchase-coming/.test(booksDoc));
+} else {
+  const unexpected = [...booksDoc.matchAll(/href="(https:[^"]+)"/g)]
+    .map((m) => m[1])
+    .filter((href) => /amazon\.com|etsy\.com|gumroad\.com|selar\.co|stripe\.com|paypal\.com/i.test(href))
+    .filter((href) => !configuredBuyUrls.includes(href));
+  check("Storefront URLs in Books match configured buy links", unexpected.length === 0, unexpected.join(", "));
+}
 check("No leftover Link pending chips", !/Link pending/.test(booksDoc));
 check("No Cover pending placeholder", !/Cover pending/.test(booksDoc));
 check("Devotional cover is present", /assets\/books\/gratitude-devotional-cover\.jpg/.test(booksDoc));
