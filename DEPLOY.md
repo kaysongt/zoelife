@@ -41,10 +41,16 @@ variables (Settings > Secrets and variables > Actions > Variables):
 | `ZOE_NEWSLETTER_ENDPOINT` | Signup POSTs here; success requires an accepted provider response | Signup refuses, says so |
 | `ZOE_GOOGLE_CALENDAR_BOOKING_URL` | Consult page links to Google Calendar appointment scheduling | Shows a labeled `GOOGLE_CALENDAR_BOOKING_URL` placeholder |
 | `ZOE_BOOKING_URL` | Fallback for the consult link if the Google Calendar variable is empty | Same placeholder |
-| `ZOE_STRIPE_DEVOTIONAL_URL` | Stripe button for the 7-Day Devotional | Purchase options coming |
-| `ZOE_PAYPAL_DEVOTIONAL_URL` | PayPal button for the 7-Day Devotional | Purchase options coming |
-| `ZOE_STRIPE_JOURNAL_URL` | Stripe button for the 100-Day Journal | Purchase options coming |
-| `ZOE_PAYPAL_JOURNAL_URL` | PayPal button for the 100-Day Journal | Purchase options coming |
+| `ZOE_AMAZON_DEVOTIONAL_URL` | Amazon button for the 7-Day Devotional | Hidden until set |
+| `ZOE_ETSY_DEVOTIONAL_URL` | Etsy button for the 7-Day Devotional | Hidden until set |
+| `ZOE_GUMROAD_DEVOTIONAL_URL` | Gumroad button for the 7-Day Devotional | Hidden until set |
+| `ZOE_STRIPE_DEVOTIONAL_URL` | Stripe button for the 7-Day Devotional | Hidden until set |
+| `ZOE_PAYPAL_DEVOTIONAL_URL` | PayPal button for the 7-Day Devotional | Hidden until set |
+| `ZOE_AMAZON_JOURNAL_URL` | Amazon button for the 100-Day Journal | Hidden until set |
+| `ZOE_ETSY_JOURNAL_URL` | Etsy button for the 100-Day Journal | Hidden until set |
+| `ZOE_GUMROAD_JOURNAL_URL` | Gumroad button for the 100-Day Journal | Hidden until set |
+| `ZOE_STRIPE_JOURNAL_URL` | Stripe button for the 100-Day Journal | Hidden until set |
+| `ZOE_PAYPAL_JOURNAL_URL` | PayPal button for the 100-Day Journal | Hidden until set |
 | `ZOE_MODE` | `production` makes the workflow build indexable | staging |
 
 The form posts `multipart/form-data` with `Accept: application/json`. The UI
@@ -62,8 +68,15 @@ documentation says it retains submissions for 30 days before deletion. A signup
 request is emailed to Zoe Life for processing; this setup does not claim to add
 the address to a separate email-marketing database.
 
-Do not invent prices or storefront URLs. Stripe and PayPal buttons appear only
-when those environment URLs are real `https` links.
+Ordinary (non-staging) rebuilds without these variables keep any existing
+non-null https values already in `js/config.js`, including the live FormSubmit
+and Google Calendar URLs. Staging/`--staging` stays fail-closed when there is
+nothing to preserve. Env vars still override when set.
+
+Do not invent prices or storefront URLs. Amazon, Etsy, Gumroad, Stripe, and
+PayPal buttons appear only when those environment URLs are real `https` links.
+If none are set, Books keeps the purchase-coming copy. All buy-link env vars
+are https-only; `http:` and `javascript:` values fail the build.
 
 > After activation, send a synthetic end-to-end test through each form and
 > confirm both messages arrived in `contact@zoelifehub.com` before launch. A form
@@ -99,9 +112,10 @@ Order matters. Do not cut DNS first.
    no cart, no stock, no couple workbook.
 2. **Wire the form and mailing list**, and test both end to end with a real
    submission that actually arrives at `contact@zoelifehub.com`.
-3. **Publish Stripe and PayPal payment links** into the environment variables
-   above, or leave the honest “purchase options coming” copy in place. Printed
-   copies go through a print-on-demand partner, not a from-home shipping flow.
+3. **Publish Amazon, Etsy, Gumroad, Stripe, and PayPal links** into the
+   environment variables above, or leave the honest “purchase options coming”
+   copy in place. Printed copies go through a print-on-demand partner, not a
+   from-home shipping flow. Do not invent storefront URLs.
 4. **Publish the Google Calendar appointment scheduling URL** as
    `ZOE_GOOGLE_CALENDAR_BOOKING_URL`.
 5. **Add `CNAME`** to the repository root containing exactly:
@@ -136,6 +150,7 @@ rather than discovered missing after the switch.
 ```bash
 node tools/build.mjs --staging
 node tests/check-site.mjs
+node tests/check-build.mjs
 node tools/serve.mjs 8765     # then, in another shell:
 node tools/qa.mjs             # includes a 390px mobile pass
 node tools/qa-forms.mjs

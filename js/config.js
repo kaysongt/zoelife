@@ -5,10 +5,16 @@ window.ZOE_CONFIG = {
   "bookingUrl": "https://calendar.app.google/Uj9v44HE72kJrKz8A",
   "payments": {
     "devotional": {
+      "amazon": null,
+      "etsy": null,
+      "gumroad": null,
       "stripe": null,
       "paypal": null
     },
     "journal": {
+      "amazon": null,
+      "etsy": null,
+      "gumroad": null,
       "stripe": null,
       "paypal": null
     }

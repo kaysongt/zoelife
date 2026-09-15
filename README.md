@@ -26,12 +26,14 @@ Keep `--staging` on any public preview until the domain actually switches, so
 this copy cannot compete with the live Squarespace site in search.
 
 Every integration is **fail closed** until configured and explicitly accepted by
-its provider. See `DEPLOY.md`.
+its provider. Ordinary rebuilds without env vars keep the live FormSubmit and
+Google Calendar URLs already in `js/config.js`. See `DEPLOY.md`.
 
 ## Checks
 
 ```bash
 node tests/check-site.mjs     # static honesty, SEO, contrast, and structure
+node tests/check-build.mjs    # rebuild preserve + marketplace URL safety
 node tools/qa.mjs             # page/width browser checks, including 390px
 node tools/qa-forms.mjs       # interaction checks, including fail-closed submit
 ```
@@ -71,8 +73,9 @@ circular mark is favicon and footer only. Tagline is a separate sentence:
 
 The build never invents client facts:
 
-- No prices, and no invented store URLs. If Stripe / PayPal links are not in
-  the environment, the Books page says **purchase options coming**.
+- No prices, and no invented store URLs. If Amazon / Etsy / Gumroad / Stripe /
+  PayPal links are not in the environment (and not already committed), the
+  Books page says **purchase options coming**.
 - Printed copies, when offered, will be fulfilled by a print-on-demand partner.
   The site does not describe packing and shipping from home.
 - Consultation booking uses the approved Google Calendar appointment schedule.
@@ -110,6 +113,7 @@ and the journal is no longer a “cover pending” box.
 
 ## Out of scope
 
-Client AI self-edit tool, courses / training videos, paid coaching rates, and
-marketplace URLs are not built. Print-on-demand partner onboarding is a
+Client AI self-edit tool, courses / training videos, and paid coaching rates
+are not built. Marketplace buy buttons render only after approved Amazon, Etsy,
+or Gumroad URLs are supplied. Print-on-demand partner onboarding is a
 separate intro.

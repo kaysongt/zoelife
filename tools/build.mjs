@@ -8,25 +8,32 @@
 import { writeFileSync, mkdirSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import {
+  buyButtonsHtml,
+  escapeAttr,
+  hasBuyLinks,
+  loadExistingConfig,
+  resolveIntegrations,
+} from "./site-config.mjs";
 
-const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
+const ROOT = process.env.ZOE_BUILD_ROOT || join(dirname(fileURLToPath(import.meta.url)), "..");
 const STAGING = process.argv.includes("--staging") || process.env.ZOE_STAGING === "1";
+
+// Env overrides. If env is absent, keep existing non-null https values in
+// js/config.js so ordinary rebuilds do not wipe live FormSubmit / Calendar
+// URLs. Staging stays fail-closed when there is nothing to preserve.
+const integrations = resolveIntegrations({
+  env: process.env,
+  existing: loadExistingConfig(join(ROOT, "js/config.js")),
+  staging: STAGING,
+});
 
 const CONFIG = {
   siteUrl: process.env.ZOE_SITE_URL || "https://www.zoelifehub.com",
-  formEndpoint: process.env.ZOE_FORM_ENDPOINT || null,
-  newsletterEndpoint: process.env.ZOE_NEWSLETTER_ENDPOINT || null,
-  bookingUrl: process.env.ZOE_GOOGLE_CALENDAR_BOOKING_URL || process.env.ZOE_BOOKING_URL || null,
-  payments: {
-    devotional: {
-      stripe: process.env.ZOE_STRIPE_DEVOTIONAL_URL || null,
-      paypal: process.env.ZOE_PAYPAL_DEVOTIONAL_URL || null,
-    },
-    journal: {
-      stripe: process.env.ZOE_STRIPE_JOURNAL_URL || null,
-      paypal: process.env.ZOE_PAYPAL_JOURNAL_URL || null,
-    },
-  },
+  formEndpoint: integrations.formEndpoint,
+  newsletterEndpoint: integrations.newsletterEndpoint,
+  bookingUrl: integrations.bookingUrl,
+  payments: integrations.payments,
   staging: STAGING,
 };
 
@@ -124,30 +131,12 @@ const socialList = (list, brand) =>
 const canonicalFor = (page) =>
   `${CONFIG.siteUrl.replace(/\/$/, "")}/${page === "index.html" ? "" : page.replace(/\.html$/, "")}`;
 
-const payButtons = (book) => {
-  const p = CONFIG.payments[book];
-  const buttons = [];
-  if (p.stripe) {
-    buttons.push(
-      `<a class="btn btn-primary" href="${p.stripe}" target="_blank" rel="noopener noreferrer">Pay with Stripe<span class="visually-hidden">, opens in a new tab</span></a>`
-    );
-  }
-  if (p.paypal) {
-    buttons.push(
-      `<a class="btn btn-secondary" href="${p.paypal}" target="_blank" rel="noopener noreferrer">Pay with PayPal<span class="visually-hidden">, opens in a new tab</span></a>`
-    );
-  }
-  if (!buttons.length) {
-    return `<p class="purchase-coming">Purchase options coming. Stripe and PayPal checkout will appear here once Zoe Life publishes live payment links. Printed copies will be fulfilled by a print-on-demand partner. Zoe Life is not packing and shipping orders from home.</p>`;
-  }
-  return `<div class="pay-row">${buttons.join("")}</div>
-        <p class="format-meta">Printed copies, when offered, will be fulfilled by a print-on-demand partner.</p>`;
-};
+const payButtons = (book) => buyButtonsHtml(CONFIG.payments[book]);
 
 const bookingBlock = () =>
   CONFIG.bookingUrl
     ? `<div class="btn-row">
-          <a class="btn btn-primary" href="${CONFIG.bookingUrl}" target="_blank" rel="noopener noreferrer">${CONSULT_CTA}<span class="visually-hidden">, Google Calendar, opens in a new tab</span></a>
+          <a class="btn btn-primary" href="${escapeAttr(CONFIG.bookingUrl)}" target="_blank" rel="noopener noreferrer">${CONSULT_CTA}<span class="visually-hidden">, Google Calendar, opens in a new tab</span></a>
         </div>
         <p class="format-meta">Booking uses Google Calendar appointment scheduling on the Zoe Life Workspace calendar.</p>`
     : `<div class="booking-placeholder">
@@ -891,7 +880,7 @@ const PAGES = {
   ),
 };
 
-mkdirSync(ROOT, { recursive: true });
+mkdirSync(join(ROOT, "js"), { recursive: true });
 const wrote = (name, body) => {
   writeFileSync(join(ROOT, name), body, "utf8");
   console.log(`wrote ${name.padEnd(22)} ${String(body.length).padStart(6)} bytes`);
@@ -978,7 +967,7 @@ console.log(
     `\nnewsletter endpoint: ${CONFIG.newsletterEndpoint || "not set (signup fails closed)"}` +
     `\nbooking url:         ${CONFIG.bookingUrl || "not set (GOOGLE_CALENDAR_BOOKING_URL placeholder)"}` +
     `\npayments:            ${
-      Object.values(CONFIG.payments).some((p) => p.stripe || p.paypal)
+      Object.values(CONFIG.payments).some(hasBuyLinks)
         ? "at least one live link"
         : "purchase options coming"
     }`

@@ -3,6 +3,8 @@ name: Build, test and deploy
 on:
   push:
     branches: [main]
+  pull_request:
+    branches: [main]
   workflow_dispatch:
     inputs:
       mode:
@@ -30,9 +32,10 @@ jobs:
         with:
           node-version: "22"
 
-      # Endpoints come from repository variables. Unset means the matching
-      # feature stays fail closed: the form refuses to submit and says so,
-      # rather than silently dropping a real enquiry.
+      # Endpoints come from repository variables when set. Ordinary rebuilds
+      # keep existing non-null https values in js/config.js if a variable is
+      # unset, so live FormSubmit / Calendar URLs are not wiped.
+
       - name: Build
         env:
           ZOE_SITE_URL: ${{ vars.ZOE_SITE_URL || 'https://www.zoelifehub.com' }}
@@ -42,17 +45,26 @@ jobs:
           ZOE_BOOKING_URL: ${{ vars.ZOE_BOOKING_URL }}
           ZOE_STRIPE_DEVOTIONAL_URL: ${{ vars.ZOE_STRIPE_DEVOTIONAL_URL }}
           ZOE_PAYPAL_DEVOTIONAL_URL: ${{ vars.ZOE_PAYPAL_DEVOTIONAL_URL }}
+          ZOE_AMAZON_DEVOTIONAL_URL: ${{ vars.ZOE_AMAZON_DEVOTIONAL_URL }}
+          ZOE_ETSY_DEVOTIONAL_URL: ${{ vars.ZOE_ETSY_DEVOTIONAL_URL }}
+          ZOE_GUMROAD_DEVOTIONAL_URL: ${{ vars.ZOE_GUMROAD_DEVOTIONAL_URL }}
           ZOE_STRIPE_JOURNAL_URL: ${{ vars.ZOE_STRIPE_JOURNAL_URL }}
           ZOE_PAYPAL_JOURNAL_URL: ${{ vars.ZOE_PAYPAL_JOURNAL_URL }}
+          ZOE_AMAZON_JOURNAL_URL: ${{ vars.ZOE_AMAZON_JOURNAL_URL }}
+          ZOE_ETSY_JOURNAL_URL: ${{ vars.ZOE_ETSY_JOURNAL_URL }}
+          ZOE_GUMROAD_JOURNAL_URL: ${{ vars.ZOE_GUMROAD_JOURNAL_URL }}
           # Default to staging so a deploy made before the domain is switched
           # cannot compete in search with the live Squarespace site.
           ZOE_STAGING: ${{ (github.event.inputs.mode == 'production' || vars.ZOE_MODE == 'production') && '0' || '1' }}
         run: node tools/build.mjs
 
       - name: Static checks
-        run: node tests/check-site.mjs
+        run: |
+          node tests/check-site.mjs
+          node tests/check-build.mjs
 
       - name: Assemble site
+        if: github.event_name != 'pull_request'
         run: |
           mkdir -p _site
           cp -r index.html about.html books.html connect.html contact.html consult.html \
@@ -67,6 +79,7 @@ jobs:
           du -sh _site
 
       - uses: actions/upload-pages-artifact@v3
+        if: github.event_name != 'pull_request'
         with:
           path: _site
 
